@@ -92,14 +92,17 @@
 
       const summaryElement = document.getElementById('summary-pdf');
       if (summaryElement) {
-        const opt = {
-          margin: 0.5,
-          filename: filename,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-        };
-        html2pdf().set(opt).from(summaryElement).save();
+        // Use a short timeout to allow the browser to render the summary before capturing
+        setTimeout(() => {
+          const opt = {
+            margin: 0.5,
+            filename: filename,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+          };
+          html2pdf().set(opt).from(summaryElement).save();
+        }, 10);
       } else {
         console.error('Summary element for PDF export not found.');
       }
