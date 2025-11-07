@@ -133,13 +133,16 @@
       const tableBodyS1 = s1.rows.map(r => [r.label, r.score]);
       const tableBodyS2 = s2.rows.map(r => [r.label, r.score]);
 
+      let finalY = cursorY; // This will track the bottom of the tables
+
       const tableOptions = {
         startY: cursorY,
         headStyles: { fillColor: [243, 244, 246], textColor: [0, 0, 0], fontStyle: 'bold' },
         styles: { fontSize: 8, cellPadding: 2 },
         columnStyles: { 1: { cellWidth: 15, halign: 'center' } },
         didDrawPage: (data) => {
-          cursorY = data.cursor.y;
+          // Update the final Y position after each table is drawn.
+          finalY = Math.max(finalY, data.cursor.y);
         }
       };
 
@@ -164,7 +167,7 @@
       });
 
       // Grand Total
-      cursorY = Math.max(doc.autoTable.previous.finalY, cursorY) + 10;
+      cursorY = finalY + 10;
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.text(`Grand Total: ${grandTotal} / 52`, pageWidth - margin, cursorY, { align: 'right' });
