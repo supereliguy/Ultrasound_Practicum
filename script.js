@@ -120,7 +120,6 @@
       // Meta Details
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      const metaYStart = cursorY;
       doc.text(`Resident: ${resident}`, margin, cursorY);
       doc.text(`Proctor: ${proctor}`, pageWidth / 2, cursorY);
       cursorY += 6;
@@ -133,41 +132,38 @@
       const tableBodyS1 = s1.rows.map(r => [r.label, r.score]);
       const tableBodyS2 = s2.rows.map(r => [r.label, r.score]);
 
-      let finalY = cursorY; // This will track the bottom of the tables
-
       const tableOptions = {
-        startY: cursorY,
         headStyles: { fillColor: [243, 244, 246], textColor: [0, 0, 0], fontStyle: 'bold' },
         styles: { fontSize: 8, cellPadding: 2 },
         columnStyles: { 1: { cellWidth: 15, halign: 'center' } },
-        didDrawPage: (data) => {
-          // Update the final Y position after each table is drawn.
-          finalY = Math.max(finalY, data.cursor.y);
-        }
       };
 
       // Station 1 Table
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
-      doc.text(`Station 1: ${case1}`, margin, cursorY - 2);
+      doc.text(`Station 1: ${case1}`, margin, cursorY);
       doc.autoTable({
         head: tableHeaders,
         body: tableBodyS1,
         ...tableOptions,
+        startY: cursorY + 2,
         margin: { left: margin, right: pageWidth / 2 + 5 }
       });
+      const finalY1 = doc.lastAutoTable.finalY;
 
       // Station 2 Table
-      doc.text(`Station 2: ${case2}`, pageWidth / 2 + 5, cursorY - 2);
+      doc.text(`Station 2: ${case2}`, pageWidth / 2 + 5, cursorY);
       doc.autoTable({
         head: tableHeaders,
         body: tableBodyS2,
         ...tableOptions,
+        startY: cursorY + 2,
         margin: { left: pageWidth / 2 + 5, right: margin }
       });
+      const finalY2 = doc.lastAutoTable.finalY;
 
       // Grand Total
-      cursorY = finalY + 10;
+      cursorY = Math.max(finalY1, finalY2) + 10;
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.text(`Grand Total: ${grandTotal} / 52`, pageWidth - margin, cursorY, { align: 'right' });
