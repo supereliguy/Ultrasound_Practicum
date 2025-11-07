@@ -92,17 +92,19 @@
 
       const summaryElement = document.getElementById('summary-pdf');
       if (summaryElement) {
-        // Use a short timeout to allow the browser to render the summary before capturing
-        setTimeout(() => {
-          const opt = {
-            margin: 0.5,
-            filename: filename,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-          };
-          html2pdf().set(opt).from(summaryElement).save();
-        }, 10);
+        const opt = {
+          margin: 0.5,
+          filename: filename,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+
+        // Use the promise-based API to ensure rendering is complete
+        html2pdf().from(summaryElement).set(opt).toPdf().get('pdf').then(function (pdf) {
+          // You can do something with the PDF object here if you want
+        }).save();
+
       } else {
         console.error('Summary element for PDF export not found.');
       }
