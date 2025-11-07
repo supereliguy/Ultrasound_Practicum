@@ -65,7 +65,7 @@
       document.getElementById('station-2-case').addEventListener('change', updateVignette);
 
       // Summary generation
-      document.getElementById('generate-summary-btn').addEventListener('click', downloadSummaryPDF);
+      document.getElementById('generate-summary-btn').addEventListener('click', downloadVectorPDF);
     });
 
     function displaySummary() {
@@ -75,39 +75,119 @@
       container.appendChild(summaryNode);
     }
 
-    function downloadSummaryPDF() {
-      displaySummary(); // First, show the summary on the page
+    function downloadVectorPDF() {
+      displaySummary(); // Keep the on-page summary for user convenience
 
-      const residentName = (document.getElementById('resident-name')?.value || '').trim();
-      const examDate = (document.getElementById('exam-date')?.value || new Date().toISOString().slice(0, 10));
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
 
-      // Create a clean filename
+      // --- 1. GATHER DATA ---
+      const resident = document.getElementById('resident-name')?.value.trim() || '—';
+      const proctor = document.getElementById('proctor-name')?.value.trim() || '—';
+      const pgy = document.getElementById('resident-pgy')?.value.trim() || '—';
+      const date = document.getElementById('exam-date')?.value.trim() || new Date().toISOString().slice(0, 10);
+
+      const s1 = collectStationScores(1);
+      const s2 = collectStationScores(2);
+      const grandTotal = s1.total + s2.total;
+
+      const case1 = getAssignedCase(1);
+      const case2 = getAssignedCase(2);
+
+      const feedback = document.getElementById('proctor-feedback')?.value.trim() || '—';
+
+      // --- 2. BUILD FILENAME ---
       let filename = 'EM_POCUS_Practicum_Summary.pdf';
-      if (residentName) {
-        const nameParts = residentName.split(' ').filter(Boolean);
+      if (resident !== '—') {
+        const nameParts = resident.split(' ').filter(Boolean);
         const lastName = nameParts.pop() || 'Resident';
         const firstName = nameParts.shift() || 'Unknown';
-        filename = `${lastName}_${firstName}_EM_POCUS_Practicum_${examDate}.pdf`;
+        filename = `${lastName}_${firstName}_EM_POCUS_Practicum_${date}.pdf`;
       }
 
-      const summaryElement = document.getElementById('summary-pdf');
-      if (summaryElement) {
-        const opt = {
-          margin: 0.5,
-          filename: filename,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-        };
+      // --- 3. CONSTRUCT PDF ---
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 15;
+      let cursorY = margin;
 
-        // Use the promise-based API to ensure rendering is complete
-        html2pdf().from(summaryElement).set(opt).toPdf().get('pdf').then(function (pdf) {
-          // You can do something with the PDF object here if you want
-        }).save();
+      // Title
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text("EM POCUS Practicum – Summary", pageWidth / 2, cursorY, { align: 'center' });
+      cursorY += 10;
 
-      } else {
-        console.error('Summary element for PDF export not found.');
-      }
+      // Meta Details
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const metaYStart = cursorY;
+      doc.text(`Resident: ${resident}`, margin, cursorY);
+      doc.text(`Proctor: ${proctor}`, pageWidth / 2, cursorY);
+      cursorY += 6;
+      doc.text(`PGY: ${pgy}`, margin, cursorY);
+      doc.text(`Date: ${date}`, pageWidth / 2, cursorY);
+      cursorY += 10;
+
+      // Tables
+      const tableHeaders = [['Item', 'Score']];
+      const tableBodyS1 = s1.rows.map(r => [r.label, r.score]);
+      const tableBodyS2 = s2.rows.map(r => [r.label, r.score]);
+
+      const tableOptions = {
+        startY: cursorY,
+        headStyles: { fillColor: [243, 244, 246], textColor: [0, 0, 0], fontStyle: 'bold' },
+        styles: { fontSize: 8, cellPadding: 2 },
+        columnStyles: { 1: { cellWidth: 15, halign: 'center' } },
+        didDrawPage: (data) => {
+          cursorY = data.cursor.y;
+        }
+      };
+
+      // Station 1 Table
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Station 1: ${case1}`, margin, cursorY - 2);
+      doc.autoTable({
+        head: tableHeaders,
+        body: tableBodyS1,
+        ...tableOptions,
+        margin: { left: margin, right: pageWidth / 2 + 5 }
+      });
+
+      // Station 2 Table
+      doc.text(`Station 2: ${case2}`, pageWidth / 2 + 5, cursorY - 2);
+      doc.autoTable({
+        head: tableHeaders,
+        body: tableBodyS2,
+        ...tableOptions,
+        margin: { left: pageWidth / 2 + 5, right: margin }
+      });
+
+      // Grand Total
+      cursorY = Math.max(doc.autoTable.previous.finalY, cursorY) + 10;
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Grand Total: ${grandTotal} / 52`, pageWidth - margin, cursorY, { align: 'right' });
+      cursorY += 10;
+
+      // Feedback
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text("Proctor Feedback:", margin, cursorY);
+      cursorY += 6;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const feedbackLines = doc.splitTextToSize(feedback, pageWidth - (margin * 2));
+      doc.text(feedbackLines, margin, cursorY);
+      cursorY += (feedbackLines.length * 4) + 10;
+
+      // Footer
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text(`Generated on ${new Date().toLocaleString()}`, margin, pageHeight - 10);
+
+      // --- 4. SAVE ---
+      doc.save(filename);
     }
 
     function calculateTotals() {
