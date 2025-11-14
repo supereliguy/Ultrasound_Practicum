@@ -112,24 +112,23 @@
       const pageHeight = doc.internal.pageSize.getHeight();
       const pageWidth = doc.internal.pageSize.getWidth();
       const margin = 15;
-      let cursorY = margin;
-      let finalY = 0; // Variable to track the bottom of the tables
+      let lastY = margin; // Use a single variable to track Y position.
 
       // Title
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
-      doc.text("EM POCUS Practicum – Summary", pageWidth / 2, cursorY, { align: 'center' });
-      cursorY += 10;
+      doc.text("EM POCUS Practicum – Summary", pageWidth / 2, lastY, { align: 'center' });
+      lastY += 10;
 
       // Meta Details
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Resident: ${resident}`, margin, cursorY);
-      doc.text(`Proctor: ${proctor}`, pageWidth / 2, cursorY);
-      cursorY += 6;
-      doc.text(`PGY: ${pgy}`, margin, cursorY);
-      doc.text(`Date: ${date}`, pageWidth / 2, cursorY);
-      cursorY += 10;
+      doc.text(`Resident: ${resident}`, margin, lastY);
+      doc.text(`Proctor: ${proctor}`, pageWidth / 2, lastY);
+      lastY += 6;
+      doc.text(`PGY: ${pgy}`, margin, lastY);
+      doc.text(`Date: ${date}`, pageWidth / 2, lastY);
+      lastY += 10;
 
       // Tables
       const tableHeaders = [['Item', 'Score', 'Notes']];
@@ -144,39 +143,35 @@
           1: { cellWidth: 15, halign: 'center' },
           2: { cellWidth: 'auto' }
         },
+        margin: { left: margin, right: margin },
         didDrawPage: (data) => {
-          // This hook is called after a table is drawn. We use it to get the final Y position.
-          finalY = data.cursor.y;
+          lastY = data.cursor.y; // Update `lastY` after each table draws.
         }
       };
 
       // Station 1 Table
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
-      doc.text(`Station 1: ${case1}`, margin, cursorY);
-      cursorY += 2;
+      doc.text(`Station 1: ${case1}`, margin, lastY);
       doc.autoTable({
+        ...tableOptions,
         head: tableHeaders,
         body: tableBodyS1,
-        ...tableOptions,
-        startY: cursorY,
-        margin: { left: margin, right: margin }
+        startY: lastY + 2,
       });
-      cursorY = finalY + 8; // Move cursor below the first table
+      lastY += 8; // Add spacing
 
       // Station 2 Table
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
-      doc.text(`Station 2: ${case2}`, margin, cursorY);
-      cursorY += 2;
+      doc.text(`Station 2: ${case2}`, margin, lastY);
       doc.autoTable({
+        ...tableOptions,
         head: tableHeaders,
         body: tableBodyS2,
-        ...tableOptions,
-        startY: cursorY,
-        margin: { left: margin, right: margin }
+        startY: lastY + 2,
       });
-      cursorY = finalY + 10; // Move cursor below the second table
+      lastY += 10; // Add spacing
 
       // Grand Total
       doc.setFontSize(14);
@@ -188,22 +183,22 @@
       const statusWidth = doc.getTextWidth(passFailStatus);
 
       doc.setTextColor(0, 0, 0);
-      doc.text(totalText, pageWidth - margin - totalWidth, cursorY);
+      doc.text(totalText, pageWidth - margin - totalWidth, lastY);
       doc.setTextColor(passFailColor);
-      doc.text(passFailStatus, pageWidth - margin - totalWidth - statusWidth - 5, cursorY);
-      cursorY += 10;
+      doc.text(passFailStatus, pageWidth - margin - totalWidth - statusWidth - 5, lastY);
+      lastY += 10;
 
       // Feedback
       doc.setTextColor(0, 0, 0); // Reset color
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
-      doc.text("Proctor Feedback:", margin, cursorY);
-      cursorY += 6;
+      doc.text("Proctor Feedback:", margin, lastY);
+      lastY += 6;
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       const feedbackLines = doc.splitTextToSize(feedback, pageWidth - (margin * 2));
-      doc.text(feedbackLines, margin, cursorY);
-      cursorY += (feedbackLines.length * 4) + 10;
+      doc.text(feedbackLines, margin, lastY);
+      lastY += (feedbackLines.length * 4) + 10;
 
       // Footer
       doc.setFontSize(8);
