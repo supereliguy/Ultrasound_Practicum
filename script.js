@@ -128,14 +128,18 @@
       cursorY += 10;
 
       // Tables
-      const tableHeaders = [['Item', 'Score']];
-      const tableBodyS1 = s1.rows.map(r => [r.label, r.score]);
-      const tableBodyS2 = s2.rows.map(r => [r.label, r.score]);
+      const tableHeaders = [['Item', 'Score', 'Notes']];
+      const tableBodyS1 = s1.rows.map(r => [r.label, r.score, r.note]);
+      const tableBodyS2 = s2.rows.map(r => [r.label, r.score, r.note]);
 
       const tableOptions = {
         headStyles: { fillColor: [243, 244, 246], textColor: [0, 0, 0], fontStyle: 'bold' },
         styles: { fontSize: 8, cellPadding: 2 },
-        columnStyles: { 1: { cellWidth: 15, halign: 'center' } },
+        columnStyles: {
+          0: { cellWidth: 'auto' },
+          1: { cellWidth: 15, halign: 'center' },
+          2: { cellWidth: 'auto' }
+        },
       };
 
       // Station 1 Table
@@ -149,7 +153,7 @@
         startY: cursorY + 2,
         margin: { left: margin, right: pageWidth / 2 + 5 }
       });
-      const finalY1 = doc.lastAutoTable.finalY;
+      const finalY1 = doc.autoTable.previous.finalY;
 
       // Station 2 Table
       doc.text(`Station 2: ${case2}`, pageWidth / 2 + 5, cursorY);
@@ -160,12 +164,17 @@
         startY: cursorY + 2,
         margin: { left: pageWidth / 2 + 5, right: margin }
       });
-      const finalY2 = doc.lastAutoTable.finalY;
+      const finalY2 = doc.autoTable.previous.finalY;
 
       // Grand Total
       cursorY = Math.max(finalY1, finalY2) + 10;
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
+      const passFailStatus = grandTotal >= 37 ? 'PASS' : 'FAIL';
+      const passFailColor = grandTotal >= 37 ? '#228B22' : '#8B0000';
+      doc.setTextColor(passFailColor);
+      doc.text(passFailStatus, pageWidth - margin - 40, cursorY, { align: 'right' });
+      doc.setTextColor(0, 0, 0);
       doc.text(`Grand Total: ${grandTotal} / 52`, pageWidth - margin, cursorY, { align: 'right' });
       cursorY += 10;
 
@@ -193,9 +202,21 @@
       let station1Total = 0, station2Total = 0;
       document.querySelectorAll('[data-station="1"]').forEach(s => station1Total += parseInt(s.value) || 0);
       document.querySelectorAll('[data-station="2"]').forEach(s => station2Total += parseInt(s.value) || 0);
+
+      const grandTotal = station1Total + station2Total;
+
       document.getElementById('station-1-total').textContent = station1Total;
       document.getElementById('station-2-total').textContent = station2Total;
-      document.getElementById('grand-total').textContent = station1Total + station2Total;
+      document.getElementById('grand-total').textContent = grandTotal;
+
+      const passFailStatus = document.getElementById('pass-fail-status');
+      if (grandTotal >= 37) {
+        passFailStatus.textContent = 'PASS';
+        passFailStatus.className = 'pass';
+      } else {
+        passFailStatus.textContent = 'FAIL';
+        passFailStatus.className = 'fail';
+      }
     }
 
     function updateVignette(event) {
@@ -239,10 +260,15 @@
     function collectStationScores(stationNum) {
       const labels = getStationLabels();
       const selects = Array.from(document.querySelectorAll(`select.score-select[data-station="${stationNum}"]`));
-      const rows = selects.map((sel, idx) => ({
-        label: labels[idx] || `Item ${idx+1}`,
-        score: parseInt(sel.value || "0", 10)
-      }));
+      const rows = selects.map((sel, idx) => {
+        const rowEl = sel.closest('tr');
+        const noteEl = rowEl.querySelector('.notes-input');
+        return {
+          label: labels[idx] || `Item ${idx+1}`,
+          score: parseInt(sel.value || "0", 10),
+          note: noteEl ? noteEl.value.trim() : ''
+        };
+      });
       const total = rows.reduce((s, r) => s + (Number.isFinite(r.score) ? r.score : 0), 0);
       return { rows, total };
     }
