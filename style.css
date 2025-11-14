@@ -8,8 +8,8 @@ body { font-family: 'Inter', sans-serif; }
     }
     .score-select { text-align: center; }
     .total-box { font-size: 1.25rem; font-weight: 600; color: #1a73e8; }
-    #pass-fail-status.pass { color: #228B22; }
-    #pass-fail-status.fail { color: #8B0000; }
+    #pass-fail-status.pass, #summary-pass-fail-status.pass { color: #228B22; }
+    #pass-fail-status.fail, #summary-pass-fail-status.fail { color: #8B0000; }
     .vignette-box {
       display: none; margin-top: 0.75rem; padding: 0.75rem 1rem; background-color: #f9fafb;
       border: 1px solid #e5e7eb; border-radius: 0.375rem; font-size: 0.875rem; line-height: 1.4rem; color: #374151;
@@ -41,14 +41,38 @@ body { font-family: 'Inter', sans-serif; }
       background-color: #f9fafb;
     }
     #summary-container #summary-pdf {
-      /* Reset PDF-specific sizing */
       width: auto;
       padding: 0;
     }
+    #summary-container .station-summary-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    #summary-container .score-cell {
+      width: 64px;
+      text-align: center;
+      font-weight: 700;
+    }
+    #summary-container .notes-cell {
+      font-size: 0.875rem;
+      color: #4b5563;
+      word-break: break-word;
+    }
+    #summary-pass-fail-status {
+      font-weight: 800;
+      margin-right: 1rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      color: white;
+    }
+    #summary-pass-fail-status.pass { background-color: #228B22; }
+    #summary-pass-fail-status.fail { background-color: #8B0000; }
 
-    /* ==== SUMMARY PDF (generated on export) ==== */
+
+    /* ==== SUMMARY PDF (re-used for on-page summary) ==== */
     #summary-pdf {
-      width: 7.5in;                 /* fits inside 0.5" margins on letter */
+      width: 7.5in;
       padding: 0.25in 0.25in 0.35in;
       font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       color: #111827;
@@ -57,7 +81,6 @@ body { font-family: 'Inter', sans-serif; }
     #summary-pdf h2 { font-size: 0.95rem; font-weight: 700; margin: 0.6rem 0 0.25rem; }
     #summary-pdf .meta { font-size: 0.9rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.25rem 0.75rem; }
     #summary-pdf .meta div span { font-weight: 600; }
-    #summary-pdf .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-top: 0.35rem; }
     #summary-pdf table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
     #summary-pdf th, #summary-pdf td { border: 1px solid #e5e7eb; padding: 6px 8px; vertical-align: top; }
     #summary-pdf th { background: #f9fafb; text-align: left; font-weight: 700; }

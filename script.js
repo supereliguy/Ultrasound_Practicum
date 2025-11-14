@@ -65,7 +65,12 @@
       document.getElementById('station-2-case').addEventListener('change', updateVignette);
 
       // Summary generation
-      document.getElementById('generate-summary-btn').addEventListener('click', downloadVectorPDF);
+      document.getElementById('generate-summary-btn').addEventListener('click', () => {
+        // First, update the on-page summary
+        displaySummary();
+        // Then, trigger the PDF download
+        downloadVectorPDF();
+      });
     });
 
     function displaySummary() {
@@ -76,8 +81,6 @@
     }
 
     function downloadVectorPDF() {
-      displaySummary(); // Keep the on-page summary for user convenience
-
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
 
@@ -110,6 +113,7 @@
       const pageWidth = doc.internal.pageSize.getWidth();
       const margin = 15;
       let cursorY = margin;
+      let finalY = 0; // Variable to track the bottom of the tables
 
       // Title
       doc.setFontSize(16);
@@ -129,8 +133,8 @@
 
       // Tables
       const tableHeaders = [['Item', 'Score', 'Notes']];
-      const tableBodyS1 = s1.rows.map(r => [r.label, r.score, r.note]);
-      const tableBodyS2 = s2.rows.map(r => [r.label, r.score, r.note]);
+      const tableBodyS1 = s1.rows.map(r => [r.label, r.score, r.note || ' ']);
+      const tableBodyS2 = s2.rows.map(r => [r.label, r.score, r.note || ' ']);
 
       const tableOptions = {
         headStyles: { fillColor: [243, 244, 246], textColor: [0, 0, 0], fontStyle: 'bold' },
@@ -140,45 +144,57 @@
           1: { cellWidth: 15, halign: 'center' },
           2: { cellWidth: 'auto' }
         },
+        didDrawPage: (data) => {
+          // This hook is called after a table is drawn. We use it to get the final Y position.
+          finalY = data.cursor.y;
+        }
       };
 
       // Station 1 Table
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.text(`Station 1: ${case1}`, margin, cursorY);
+      cursorY += 2;
       doc.autoTable({
         head: tableHeaders,
         body: tableBodyS1,
         ...tableOptions,
-        startY: cursorY + 2,
-        margin: { left: margin, right: pageWidth / 2 + 5 }
+        startY: cursorY,
+        margin: { left: margin, right: margin }
       });
-      const finalY1 = doc.autoTable.previous.finalY;
+      cursorY = finalY + 8; // Move cursor below the first table
 
       // Station 2 Table
-      doc.text(`Station 2: ${case2}`, pageWidth / 2 + 5, cursorY);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Station 2: ${case2}`, margin, cursorY);
+      cursorY += 2;
       doc.autoTable({
         head: tableHeaders,
         body: tableBodyS2,
         ...tableOptions,
-        startY: cursorY + 2,
-        margin: { left: pageWidth / 2 + 5, right: margin }
+        startY: cursorY,
+        margin: { left: margin, right: margin }
       });
-      const finalY2 = doc.autoTable.previous.finalY;
+      cursorY = finalY + 10; // Move cursor below the second table
 
       // Grand Total
-      cursorY = Math.max(finalY1, finalY2) + 10;
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       const passFailStatus = grandTotal >= 37 ? 'PASS' : 'FAIL';
       const passFailColor = grandTotal >= 37 ? '#228B22' : '#8B0000';
-      doc.setTextColor(passFailColor);
-      doc.text(passFailStatus, pageWidth - margin - 40, cursorY, { align: 'right' });
+      const totalText = `Grand Total: ${grandTotal} / 52`;
+      const totalWidth = doc.getTextWidth(totalText);
+      const statusWidth = doc.getTextWidth(passFailStatus);
+
       doc.setTextColor(0, 0, 0);
-      doc.text(`Grand Total: ${grandTotal} / 52`, pageWidth - margin, cursorY, { align: 'right' });
+      doc.text(totalText, pageWidth - margin - totalWidth, cursorY);
+      doc.setTextColor(passFailColor);
+      doc.text(passFailStatus, pageWidth - margin - totalWidth - statusWidth - 5, cursorY);
       cursorY += 10;
 
       // Feedback
+      doc.setTextColor(0, 0, 0); // Reset color
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.text("Proctor Feedback:", margin, cursorY);
@@ -200,8 +216,8 @@
 
     function calculateTotals() {
       let station1Total = 0, station2Total = 0;
-      document.querySelectorAll('[data-station="1"]').forEach(s => station1Total += parseInt(s.value) || 0);
-      document.querySelectorAll('[data-station="2"]').forEach(s => station2Total += parseInt(s.value) || 0);
+      document.querySelectorAll('.score-select[data-station="1"]').forEach(s => station1Total += parseInt(s.value) || 0);
+      document.querySelectorAll('.score-select[data-station="2"]').forEach(s => station2Total += parseInt(s.value) || 0);
 
       const grandTotal = station1Total + station2Total;
 
@@ -209,13 +225,13 @@
       document.getElementById('station-2-total').textContent = station2Total;
       document.getElementById('grand-total').textContent = grandTotal;
 
-      const passFailStatus = document.getElementById('pass-fail-status');
+      const passFailStatusEl = document.getElementById('pass-fail-status');
       if (grandTotal >= 37) {
-        passFailStatus.textContent = 'PASS';
-        passFailStatus.className = 'pass';
+        passFailStatusEl.textContent = 'PASS';
+        passFailStatusEl.className = 'pass';
       } else {
-        passFailStatus.textContent = 'FAIL';
-        passFailStatus.className = 'fail';
+        passFailStatusEl.textContent = 'FAIL';
+        passFailStatusEl.className = 'fail';
       }
     }
 
@@ -289,6 +305,8 @@
       const s1 = collectStationScores(1);
       const s2 = collectStationScores(2);
       const grand = s1.total + s2.total;
+      const passFailStatus = grand >= 37 ? 'PASS' : 'FAIL';
+      const passFailClass = grand >= 37 ? 'pass' : 'fail';
 
       // Cases
       const case1 = getAssignedCase(1);
@@ -300,13 +318,17 @@
 
       const makeTable = (stationTitle, data, caseName) => {
         const body = data.rows.map(r => `
-          <tr><td>${r.label}</td><td style="width:64px; text-align:center; font-weight:700;">${Number.isFinite(r.score) ? r.score : '—'}</td></tr>
+          <tr>
+            <td>${r.label}</td>
+            <td class="score-cell">${Number.isFinite(r.score) ? r.score : '—'}</td>
+            <td class="notes-cell">${r.note || ''}</td>
+          </tr>
         `).join('');
         return `
           <h2>${stationTitle}</h2>
           <div class="small"><span class="chip">${caseName}</span></div>
           <table>
-            <thead><tr><th>Item</th><th>Score</th></tr></thead>
+            <thead><tr><th>Item</th><th>Score</th><th>Notes</th></tr></thead>
             <tbody>${body}</tbody>
           </table>
           <div class="totals">Total: <span class="grand">${data.total}</span> / 26</div>
@@ -315,7 +337,7 @@
 
       // Build container
       const wrap = document.createElement('div');
-      wrap.id = 'summary-pdf';
+      wrap.id = 'summary-pdf'; // Re-use styles where possible
       wrap.innerHTML = `
         <h1>EM POCUS Practicum – Summary</h1>
         <div class="meta">
@@ -325,12 +347,13 @@
           <div><span>Date:</span> ${date}</div>
         </div>
 
-        <div class="twocol">
-          <div>${makeTable('Station 1', s1, case1)}</div>
-          <div>${makeTable('Station 2', s2, case2)}</div>
+        <div class="station-summary-container">
+          ${makeTable('Station 1', s1, case1)}
+          ${makeTable('Station 2', s2, case2)}
         </div>
 
         <div class="totals" style="margin-top:0.6rem;">
+          <span id="summary-pass-fail-status" class="${passFailClass}">${passFailStatus}</span>
           Grand Total: <span class="grand">${grand}</span> / 52
         </div>
 
