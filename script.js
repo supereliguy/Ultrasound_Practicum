@@ -314,7 +314,7 @@
       const makeTable = (stationTitle, data, caseName) => {
         const body = data.rows.map(r => `
           <tr>
-            <td>${r.label}</td>
+            <td class="item-cell">${r.label}</td>
             <td class="score-cell">${Number.isFinite(r.score) ? r.score : '—'}</td>
             <td class="notes-cell">${r.note || ''}</td>
           </tr>

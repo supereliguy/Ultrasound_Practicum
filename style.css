@@ -69,6 +69,22 @@ body { font-family: 'Inter', sans-serif; }
     #summary-pass-fail-status.pass { background-color: #228B22; }
     #summary-pass-fail-status.fail { background-color: #8B0000; }
 
+    #summary-pdf table {
+      table-layout: fixed;
+    }
+
+    #summary-pdf .item-cell {
+      width: 50%;
+    }
+
+    #summary-pdf .score-cell {
+        width: 15%;
+    }
+
+    #summary-pdf .notes-cell {
+        width: 35%;
+    }
+
 
     /* ==== SUMMARY PDF (re-used for on-page summary) ==== */
     #summary-pdf {
