@@ -270,16 +270,28 @@
 
     function collectStationScores(stationNum) {
       const labels = getStationLabels();
-      const selects = Array.from(document.querySelectorAll(`select.score-select[data-station="${stationNum}"]`));
-      const rows = selects.map((sel, idx) => {
-        const rowEl = sel.closest('tr');
-        const noteEl = rowEl.querySelector('.notes-input');
+
+      // Optimization: Select container once to avoid N+1 DOM traversals
+      const firstSelect = document.querySelector(`select.score-select[data-station="${stationNum}"]`);
+      if (!firstSelect) {
+        return { rows: [], total: 0 };
+      }
+
+      // We assume all selects for a station are in the same tbody
+      const tbody = firstSelect.closest('tbody');
+      const selects = tbody.querySelectorAll('.score-select');
+      const notes = tbody.querySelectorAll('.notes-input');
+
+      const rows = Array.from(selects).map((sel, idx) => {
+        // Rely on document order: selects[i] pairs with notes[i]
+        const noteVal = notes[idx] ? notes[idx].value.trim() : '';
         return {
           label: labels[idx] || `Item ${idx+1}`,
           score: parseInt(sel.value || "0", 10),
-          note: noteEl ? noteEl.value.trim() : ''
+          note: noteVal
         };
       });
+
       const total = rows.reduce((s, r) => s + (Number.isFinite(r.score) ? r.score : 0), 0);
       return { rows, total };
     }
@@ -289,12 +301,22 @@
       return sel && sel.value ? sel.value : "—";
     }
 
+    function escapeHtml(text) {
+      if (!text) return text;
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
     function buildSummaryNode() {
       // Meta
-      const resident = (document.getElementById('resident-name')?.value || '').trim() || '—';
-      const proctor  = (document.getElementById('proctor-name')?.value || '').trim()  || '—';
-      const pgy      = (document.getElementById('resident-pgy')?.value || '').trim()  || '—';
-      const date     = (document.getElementById('exam-date')?.value || '').trim()     || new Date().toISOString().slice(0,10);
+      const resident = escapeHtml((document.getElementById('resident-name')?.value || '').trim() || '—');
+      const proctor  = escapeHtml((document.getElementById('proctor-name')?.value || '').trim()  || '—');
+      const pgy      = escapeHtml((document.getElementById('resident-pgy')?.value || '').trim()  || '—');
+      const date     = escapeHtml((document.getElementById('exam-date')?.value || '').trim()     || new Date().toISOString().slice(0,10));
 
       // Scores
       const s1 = collectStationScores(1);
@@ -304,19 +326,19 @@
       const passFailClass = grand >= 37 ? 'pass' : 'fail';
 
       // Cases
-      const case1 = getAssignedCase(1);
-      const case2 = getAssignedCase(2);
+      const case1 = escapeHtml(getAssignedCase(1));
+      const case2 = escapeHtml(getAssignedCase(2));
 
       // Feedback
-      const feedbackRaw = (document.getElementById('proctor-feedback')?.value || '').trim();
+      const feedbackRaw = escapeHtml((document.getElementById('proctor-feedback')?.value || '').trim());
       const feedback = feedbackRaw.length > 1200 ? (feedbackRaw.slice(0, 1200) + ' …') : feedbackRaw;
 
       const makeTable = (stationTitle, data, caseName) => {
         const body = data.rows.map(r => `
           <tr>
-            <td class="item-cell">${r.label}</td>
+            <td class="item-cell">${escapeHtml(r.label)}</td>
             <td class="score-cell">${Number.isFinite(r.score) ? r.score : '—'}</td>
-            <td class="notes-cell">${r.note || ''}</td>
+            <td class="notes-cell">${escapeHtml(r.note || '')}</td>
           </tr>
         `).join('');
         return `

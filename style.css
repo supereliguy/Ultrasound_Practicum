@@ -8,8 +8,8 @@ body { font-family: 'Inter', sans-serif; }
     }
     .score-select { text-align: center; }
     .total-box { font-size: 1.25rem; font-weight: 600; color: #1a73e8; }
-    #pass-fail-status.pass, #summary-pass-fail-status.pass { color: #228B22; }
-    #pass-fail-status.fail, #summary-pass-fail-status.fail { color: #8B0000; }
+    #pass-fail-status.pass { color: #228B22; }
+    #pass-fail-status.fail { color: #8B0000; }
     .vignette-box {
       display: none; margin-top: 0.75rem; padding: 0.75rem 1rem; background-color: #f9fafb;
       border: 1px solid #e5e7eb; border-radius: 0.375rem; font-size: 0.875rem; line-height: 1.4rem; color: #374151;
@@ -39,6 +39,8 @@ body { font-family: 'Inter', sans-serif; }
       border: 1px solid #d1d5db;
       border-radius: 0.5rem;
       background-color: #f9fafb;
+      display: flex;
+      justify-content: center;
     }
     #summary-container #summary-pdf {
       width: auto;
