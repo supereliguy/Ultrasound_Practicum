@@ -48,7 +48,7 @@ body { font-family: 'Inter', sans-serif; }
     }
     #summary-container .station-summary-container {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       gap: 1.5rem;
     }
     #summary-container .score-cell {
