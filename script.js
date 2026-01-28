@@ -71,13 +71,35 @@
         // Then, trigger the PDF download
         downloadVectorPDF();
       });
+
+      document.getElementById('generate-summary-only-btn').addEventListener('click', () => {
+        displaySummary();
+      });
     });
 
     function displaySummary() {
       const container = document.getElementById('summary-container');
       const summaryNode = buildSummaryNode();
       container.innerHTML = ''; // Clear previous summary
-      container.appendChild(summaryNode);
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'flex flex-col items-center w-full';
+
+      wrapper.appendChild(summaryNode);
+
+      // Add Export to PDF button at the end
+      const exportBtnContainer = document.createElement('div');
+      exportBtnContainer.className = 'mt-6 text-center print-hide';
+      exportBtnContainer.innerHTML = `
+        <button id="export-pdf-btn" class="bg-green-600 text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-green-700 transition duration-200">
+          Export as PDF
+        </button>
+      `;
+      wrapper.appendChild(exportBtnContainer);
+
+      container.appendChild(wrapper);
+
+      document.getElementById('export-pdf-btn').addEventListener('click', downloadVectorPDF);
     }
 
     function downloadVectorPDF() {
